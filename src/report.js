@@ -1,5 +1,5 @@
 const { getTrips, getDriver, getVehicle } = require('api');
-const drivers = require('api/data/drivers');
+
 
 /**
  * This function should return the data for drivers in the specified format
@@ -10,15 +10,52 @@ const drivers = require('api/data/drivers');
  */
 async function driverReport() {
   // Your code goes here
-  driversIds = Object.keys(drivers);
+  let driversIds = [];
+  let drivers = [];
+
+  
+
   let report = [];
   const allTrips = await getTrips();
   let trips = [...allTrips];
+
+  for (let i = 0; i < allTrips.length; i++) {
+    driversIds.push(allTrips[i].driverID);
+  }
+
+  driversIds = [...new Set(driversIds)];
+  
+ 
+
+  for (const driverId of driversIds) {
+    let currentDriver = getDriver(driverId);
+    drivers.push(currentDriver);
+  }
+
+  let driverData = await Promise.allSettled(drivers);
+
+
+  let driverIdObj = {};
+
+  for (let i = 0; i < driverData.length; i++) {
+    try {
+      driverIdObj[driversIds[i]] = driverData[i];
+    } catch {}
+  }
+
+  const driverIds = Object.keys(driverIdObj);
+
+  
  for(const driver of driversIds){
-   let tripsByDriver = trips.filter(trip => trip.driverID === driver);
+
+  try{
+    let tripsByDriver = trips.filter(trip => trip.driverID === driver);
+   
    let cashTripsByDriver = allTrips.filter(trip => trip.isCash === true && trip.driverID === driver);
+
    let noneCashTripsByDriver = allTrips.filter(trip => trip.isCash === false && trip.driverID === driver);
   let driverInfo = await getDriver(driver)
+
   let noOfVehicles = driverInfo.vehicleID.map(vehicle => getVehicle(vehicle));
   let resolvedNoOfVehicles = (await Promise.all(noOfVehicles)).map(vehicle => ({
     "plate": vehicle.plate,
@@ -50,12 +87,19 @@ async function driverReport() {
       }
     ))
   })
+  }
+
+  catch(e){
+
+  }
+   
 }
-//  report
-//  console.log(report);
+
+
  return report;
 
 }
+
 driverReport()
 
 module.exports = driverReport;
